@@ -1,25 +1,29 @@
-from flask import Flask, request
-import requests
+from flask import Flask, request, jsonify
+from openai import OpenAI
 import os
 
 app = Flask(__name__)
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-HF_TOKEN = os.environ.get("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
-
-headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-
-@app.route("/", methods=["GET"])
+@app.route("/")
 def home():
-    return "OneAI bot ishlayapti!"
+    return "Bot is running"
 
 @app.route("/ask", methods=["POST"])
 def ask():
     data = request.json
     prompt = data.get("prompt")
 
-    response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-    return response.json()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({
+        "answer": response.choices[0].message.content
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
